@@ -7,6 +7,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -23,16 +27,23 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class SlideActivity extends Activity {
     ImageView slideView;
+    Timer timer;
+    public int currentimageindex=0;
 	private ImageView imageCtrlButton;
+	//List<String> imageArray = new ArrayList<String>();
+	String[] imageArray = new String[60];
 	private Integer currentImageCtrlButtonId;
 	private Integer playButton;
 	private Integer pauseButton;
@@ -52,9 +63,7 @@ public class SlideActivity extends Activity {
 		// Create an object for subclass of AsyncTask
 	   if(isConnected()){
           new HttpAsyncTask().execute("http://192.168.0.100:3000/images.json");
-          GetXMLTask task = new GetXMLTask();
-          // Execute the task
-          task.execute(new String[] { URL });
+        
 	    }
 	   else
 	     {
@@ -68,17 +77,63 @@ public class SlideActivity extends Activity {
 			  if(currentImageCtrlButtonId == playButton ){
 			    imageCtrlButton.setImageResource(pauseButton);
 			    imageCtrlButton.setTag(pauseButton); 
+			    startSlide();
 			  }
 			  else
 			  {
 				imageCtrlButton.setImageResource(playButton);
-				imageCtrlButton.setTag(playButton);				  
+				imageCtrlButton.setTag(playButton);	
+				stopSlide();
 			  }
 			}
 			
 		});
 	}
 
+    public void startSlide(){
+		final Handler mHandler = new Handler();
+		final Runnable mUpdateResults = new Runnable() {
+			public void run(){
+				AnimateandSlideShow();
+			}
+		};
+		
+        int delay = 8000; // delay for 1 sec.
+
+        int period = 8000; // repeat every 4 sec.
+        Timer timer = new Timer();
+
+        timer.scheduleAtFixedRate(new TimerTask() {
+
+        public void run() {
+
+        	 mHandler.post(mUpdateResults);
+
+        }
+
+        }, delay, period);
+     }
+    
+    
+	public void stopSlide(){
+		finish();
+       // android.os.Process.killProcess(android.os.Process.myPid());
+	}
+	
+    private void AnimateandSlideShow() {
+    	
+    	if(currentimageindex < imageArray.length && imageArray.length > 0)
+    	{
+    		  GetXMLTask task = new GetXMLTask();
+              task.execute(new String[] { imageArray[currentimageindex] });
+    	}
+    	
+    	else
+    	{
+    		stopSlide();
+    	}
+      
+    }
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -153,6 +208,9 @@ public class SlideActivity extends Activity {
         @Override
         protected void onPostExecute(Bitmap result) {
             slideView.setImageBitmap(result);
+        	currentimageindex++;
+       		Animation rotateimage = AnimationUtils.loadAnimation(SlideActivity.this, R.anim.custom_anim);
+        	slideView.startAnimation(rotateimage);
         }
  
         // Creates Bitmap from InputStream and returns it
@@ -205,16 +263,17 @@ public class SlideActivity extends Activity {
         @Override
         protected void onPostExecute(String result) {
             Toast.makeText(getBaseContext(), "Received!", Toast.LENGTH_LONG).show();
-            String vv = "";
+            String image_url = "";
             try
             {
             JSONObject obj = new JSONObject(result);
             JSONArray arr = obj.getJSONArray("items");
             for (int i = 0; i < arr.length(); i++) {
             	JSONObject objects = arr.getJSONObject(i);
-            	vv +=  (String) objects.get("image_url");
+            	image_url =  (String) objects.get("image_url");
+            	imageArray[i] = image_url;
             	}
-            dispMessage.setText(vv);
+            dispMessage.setText("Click Play To Start Slide");
             }
             catch (JSONException e) {
             	dispMessage.setText("error");
