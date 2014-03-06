@@ -48,6 +48,7 @@ public class SlideActivity extends Activity {
 	private Integer currentImageCtrlButtonId;
 	private Integer playButton;
 	private Integer pauseButton;
+	public String serverBaseUrl = "http://192.168.0.100:3000";
 	TextView dispMessage;
 	public static final String URL = "http://myntra.myntassets.com/images/style/properties/FabAlley-Women-Dresses_e4b93380ed7bed147df27a887f2a3aff_images_360_480_mini.jpg";
 	@Override
@@ -63,7 +64,7 @@ public class SlideActivity extends Activity {
 		dispMessage = (TextView)findViewById(R.id.disp_message);
 		// Create an object for subclass of AsyncTask
 	   if(isConnected()){
-          new HttpAsyncTask().execute("http://192.168.0.100:3000/images.json");
+          new HttpAsyncTask().execute(serverBaseUrl+"/images.json");
         
 	    }
 	   else
@@ -75,6 +76,7 @@ public class SlideActivity extends Activity {
 	       @Override
 	       public void onClick(View V){
 	    	   String image_id = imageArray[currentimageindex][0];
+	    	   saveImageClick(image_id);
 	    	   Toast.makeText(getBaseContext(), image_id, Toast.LENGTH_LONG).show();
 	       }
 	     });
@@ -98,6 +100,12 @@ public class SlideActivity extends Activity {
 			
 		});
 	}
+	
+	
+    public void saveImageClick(String img_id){
+    	String clickSaveUrl = serverBaseUrl+"/images/"+img_id+".json";
+    	new HttpClickAsyncTask().execute(clickSaveUrl);	
+    }
 
     public void startSlide(){
 		final Handler mHandler = new Handler();
@@ -240,6 +248,8 @@ public class SlideActivity extends Activity {
             }
             return bitmap;
         }
+        
+
  
         // Makes HttpURLConnection and returns InputStream
         private InputStream getHttpConnection(String urlString)
@@ -261,6 +271,20 @@ public class SlideActivity extends Activity {
             }
             return stream;
         }
+    }
+	
+	
+    private class HttpClickAsyncTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... urls) {
+ 
+            return GET(urls[0]);
+        }
+        // onPostExecute displays the results of the AsyncTask.
+        @Override
+        protected void onPostExecute(String result) {
+            
+       }
     }
 	
     private class HttpAsyncTask extends AsyncTask<String, Void, String> {
