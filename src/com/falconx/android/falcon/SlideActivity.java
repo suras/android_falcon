@@ -40,10 +40,11 @@ import android.widget.Toast;
 public class SlideActivity extends Activity {
     ImageView slideView;
     Timer timer;
+    TimerTask myTimerTask;
     public int currentimageindex=0;
 	private ImageView imageCtrlButton;
 	//List<String> imageArray = new ArrayList<String>();
-	String[] imageArray = new String[60];
+	String[][] imageArray = new String[60][2];
 	private Integer currentImageCtrlButtonId;
 	private Integer playButton;
 	private Integer pauseButton;
@@ -70,7 +71,14 @@ public class SlideActivity extends Activity {
 		   dispMessage.setText("no internet connection");
 		   
 	     }
-		imageCtrlButton.setOnClickListener(new View.OnClickListener(){
+	     slideView.setOnClickListener(new View.OnClickListener(){
+	       @Override
+	       public void onClick(View V){
+	    	   String image_id = imageArray[currentimageindex][0];
+	    	   Toast.makeText(getBaseContext(), image_id, Toast.LENGTH_LONG).show();
+	       }
+	     });
+	     imageCtrlButton.setOnClickListener(new View.OnClickListener(){
 			@Override
 			public void onClick(View V){
 			  currentImageCtrlButtonId = (Integer) imageCtrlButton.getTag();
@@ -78,6 +86,7 @@ public class SlideActivity extends Activity {
 			    imageCtrlButton.setImageResource(pauseButton);
 			    imageCtrlButton.setTag(pauseButton); 
 			    startSlide();
+			    dispMessage.setText("");
 			  }
 			  else
 			  {
@@ -98,25 +107,26 @@ public class SlideActivity extends Activity {
 			}
 		};
 		
-        int delay = 8000; // delay for 1 sec.
+        int delay = 3000; // delay for 1 sec.
 
-        int period = 8000; // repeat every 4 sec.
+        int period = 3000; // repeat every 4 sec.
         Timer timer = new Timer();
+        myTimerTask = new TimerTask() {
 
-        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
 
-        public void run() {
+            	 mHandler.post(mUpdateResults);
 
-        	 mHandler.post(mUpdateResults);
+            }
 
-        }
-
-        }, delay, period);
+            };
+            timer.scheduleAtFixedRate(myTimerTask, delay, period);
      }
     
     
 	public void stopSlide(){
-		finish();
+		myTimerTask.cancel();
+		//finish();
        // android.os.Process.killProcess(android.os.Process.myPid());
 	}
 	
@@ -125,7 +135,7 @@ public class SlideActivity extends Activity {
     	if(currentimageindex < imageArray.length && imageArray.length > 0)
     	{
     		  GetXMLTask task = new GetXMLTask();
-              task.execute(new String[] { imageArray[currentimageindex] });
+              task.execute(new String[] { imageArray[currentimageindex][1] });
     	}
     	
     	else
@@ -209,7 +219,7 @@ public class SlideActivity extends Activity {
         protected void onPostExecute(Bitmap result) {
             slideView.setImageBitmap(result);
         	currentimageindex++;
-       		Animation rotateimage = AnimationUtils.loadAnimation(SlideActivity.this, R.anim.custom_anim);
+       		Animation rotateimage = AnimationUtils.loadAnimation(SlideActivity.this, R.anim.fade_in);
         	slideView.startAnimation(rotateimage);
         }
  
@@ -262,7 +272,7 @@ public class SlideActivity extends Activity {
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(getBaseContext(), "Received!", Toast.LENGTH_LONG).show();
+            Toast.makeText(getBaseContext(), "Ready!", Toast.LENGTH_LONG).show();
             String image_url = "";
             try
             {
@@ -271,7 +281,8 @@ public class SlideActivity extends Activity {
             for (int i = 0; i < arr.length(); i++) {
             	JSONObject objects = arr.getJSONObject(i);
             	image_url =  (String) objects.get("image_url");
-            	imageArray[i] = image_url;
+            	imageArray[i][0] = (String) objects.get("id");
+            	imageArray[i][1] = image_url;
             	}
             dispMessage.setText("Click Play To Start Slide");
             }
