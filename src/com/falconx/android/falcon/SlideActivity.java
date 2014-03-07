@@ -7,8 +7,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -21,6 +19,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
@@ -30,12 +29,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 
 public class SlideActivity extends Activity {
     ImageView slideView;
@@ -77,9 +78,23 @@ public class SlideActivity extends Activity {
 	       public void onClick(View V){
 	    	   String image_id = imageArray[currentimageindex][0];
 	    	   saveImageClick(image_id);
+	
 	    	   Toast.makeText(getBaseContext(), image_id, Toast.LENGTH_LONG).show();
 	       }
 	     });
+	    
+	    slideView.setOnTouchListener(new OnSwipeTouchListener(SlideActivity.this) {
+	    	    @Override
+	    	    public void onSwipeLeft() {
+	    	    	   Intent i = new Intent(SlideActivity.this, TrendActivity.class);
+	    	    	   startActivity(i);
+	    	    }
+	    	    public void onSwipeRight() {
+	    	    	   Intent i = new Intent(SlideActivity.this, TrendActivity.class);
+	    	    	   startActivity(i);
+	    	    }
+	    	});
+	    
 	     imageCtrlButton.setOnClickListener(new View.OnClickListener(){
 			@Override
 			public void onClick(View V){
