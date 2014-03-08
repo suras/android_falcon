@@ -41,6 +41,7 @@ public class TrendActivity extends Activity
 {
 	public String serverBaseUrl = "http://192.168.0.100:3000";
 	TextView dispMessage;
+	public MyAdapter myadapter;
 	ImageView picture;
 	public int count = 0;
 	String[][] imageArray = new String[20][2];
@@ -64,9 +65,9 @@ public class TrendActivity extends Activity
   
     }
 	public void  startGrid(){
-		
+		   myadapter = new MyAdapter(this);
 		   GridView gridView = (GridView)findViewById(R.id.gridview);
-           gridView.setAdapter(new MyAdapter(this));
+           gridView.setAdapter(myadapter);
 	}
 	//checking connection
 	public boolean isConnected(){
@@ -108,17 +109,17 @@ public class TrendActivity extends Activity
         @Override
         public Object getItem(int i)
         {
-            return items.get(i);
+        	return null;
         }
 
         @Override
         public long getItemId(int i)
         {
-        	 return 0;
+        	 return items.get(i).index;
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup)
+        public View getView(int position, View view, ViewGroup viewGroup)
         {
             View v = view;
             
@@ -130,27 +131,31 @@ public class TrendActivity extends Activity
                v.setTag(R.id.picture, v.findViewById(R.id.picture));
                v.setTag(R.id.text, v.findViewById(R.id.text));
             }
+            
 
             picture = (ImageView)v.getTag(R.id.picture);
             name = (TextView)v.getTag(R.id.text);
              
-            Item item = (Item)getItem(i);
-            GetXMLTask task = new GetXMLTask();
-            task.execute(new String[] { item.imgUrl });
+            Item item = (Item)getItem(position);
+            picture.setTag(items.get(position).imgUrl);
+            GetXMLTask task = new GetXMLTask(picture);
+            task.execute(new String[] { items.get(position).imgUrl });
             //picture.setImageResource(R.drawable.tree2);
-            name.setText(i+"");
+            name.setText(position+"s"+count);
+            dispMessage.setText(count+"");
+            count++;
 
             return v;
         }
 
         private class Item
         {
-            final int name;
+            final int index;
             final String imgUrl;
 
             Item(String imgUrl, int id)
             {
-                this.name = id;
+                this.index = id;
                 this.imgUrl = imgUrl;
             }
         }
@@ -229,6 +234,8 @@ public class TrendActivity extends Activity
 	
 	// showing image
 	private class GetXMLTask extends AsyncTask<String, Void, Bitmap> {
+        private ImageView imv;
+        private String path;
         @Override
         protected Bitmap doInBackground(String... urls) {
             Bitmap map = null;
@@ -237,12 +244,27 @@ public class TrendActivity extends Activity
             }
             return map;
         }
- 
+        public GetXMLTask(ImageView imv){
+        	  this.imv = imv;
+              this.path = imv.getTag().toString();
+        }
         // Sets the Bitmap returned by doInBackground
         @Override
         protected void onPostExecute(Bitmap result) {
-        	
-            picture.setImageBitmap(result);
+            if (!imv.getTag().toString().equals(path)) {
+                /* The path is not same. This means that this
+                   image view is handled by some other async task. 
+                   We don't do anything and return. */
+                return;
+         }     
+            
+            if(result != null && imv != null){
+                imv.setVisibility(View.VISIBLE);
+                imv.setImageBitmap(result);
+            }else{
+                imv.setVisibility(View.GONE);
+            }
+          
         	
         }
  

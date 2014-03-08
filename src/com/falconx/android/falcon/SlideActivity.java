@@ -40,6 +40,7 @@ import android.widget.Toast;
 
 public class SlideActivity extends Activity {
     ImageView slideView;
+    ImageView redHeartView;
     Timer timer;
     TimerTask myTimerTask;
     public int currentimageindex=0;
@@ -56,9 +57,10 @@ public class SlideActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_slide);
+		redHeartView = (ImageView)findViewById(R.id.red_heart_image);
 		playButton = R.drawable.play_button;
 		pauseButton = R.drawable.pause_button;
-		slideView = (ImageView)findViewById(R.id.slide_view);
+		slideView = (ImageView)findViewById(R.id.slide_view);;
 		imageCtrlButton = (ImageView)findViewById(R.id.image_ctrl_button);
 		imageCtrlButton.setImageResource(playButton);
 		imageCtrlButton.setTag(playButton); 
@@ -76,9 +78,9 @@ public class SlideActivity extends Activity {
 	     slideView.setOnClickListener(new View.OnClickListener(){
 	       @Override
 	       public void onClick(View V){
+	    	   redHeartView.setImageResource(R.drawable.red_heart);
 	    	   String image_id = imageArray[currentimageindex][0];
 	    	   saveImageClick(image_id);
-	
 	    	   Toast.makeText(getBaseContext(), image_id, Toast.LENGTH_LONG).show();
 	       }
 	     });
@@ -89,10 +91,14 @@ public class SlideActivity extends Activity {
 	    	    	   Intent i = new Intent(SlideActivity.this, TrendActivity.class);
 	    	    	   startActivity(i);
 	    	    }
+	    
 	    	    public void onSwipeRight() {
-	    	    	   Intent i = new Intent(SlideActivity.this, TrendActivity.class);
-	    	    	   startActivity(i);
+	    	    	redHeartView.setImageResource(R.drawable.red_heart);
+		 	    	 String image_id = imageArray[currentimageindex][0];
+		 	    	 saveImageClick(image_id);
+		 	    	 Toast.makeText(getBaseContext(), image_id, Toast.LENGTH_LONG).show();
 	    	    }
+
 	    	});
 	    
 	     imageCtrlButton.setOnClickListener(new View.OnClickListener(){
@@ -157,6 +163,7 @@ public class SlideActivity extends Activity {
     	
     	if(currentimageindex < imageArray.length && imageArray.length > 0)
     	{
+    		redHeartView.setImageResource(0);
     		  GetXMLTask task = new GetXMLTask();
               task.execute(new String[] { imageArray[currentimageindex][1] });
     	}
