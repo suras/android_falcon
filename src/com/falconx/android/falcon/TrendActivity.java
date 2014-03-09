@@ -4,12 +4,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -23,6 +23,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -131,23 +134,38 @@ public class TrendActivity extends Activity
                v.setTag(R.id.picture, v.findViewById(R.id.picture));
                v.setTag(R.id.text, v.findViewById(R.id.text));
             }
-            
-
+            Item item = (Item)getItem(position);
+            String url = items.get(position).imgUrl;
             picture = (ImageView)v.getTag(R.id.picture);
             name = (TextView)v.getTag(R.id.text);
+            if (cancelPotentialDownload(url, picture)) {
+                BitmapDownloaderTask task = new BitmapDownloaderTask(picture);
+                DownloadedDrawable downloadedDrawable = new DownloadedDrawable(task);
+                picture.setImageDrawable(downloadedDrawable);
+                name.setText(position+"s"+count);
+                task.execute(url);
+            }
+
              
-            Item item = (Item)getItem(position);
-            picture.setTag(items.get(position).imgUrl);
-            GetXMLTask task = new GetXMLTask(picture);
-            task.execute(new String[] { items.get(position).imgUrl });
+            
+            
+      
             //picture.setImageResource(R.drawable.tree2);
-            name.setText(position+"s"+count);
-            dispMessage.setText(count+"");
-            count++;
+            
+          
 
             return v;
         }
-
+        private BitmapDownloaderTask getBitmapDownloaderTask(ImageView imageView) {
+            if (imageView != null) {
+                Drawable drawable = imageView.getDrawable();
+                if (drawable instanceof DownloadedDrawable) {
+                    DownloadedDrawable downloadedDrawable = (DownloadedDrawable)drawable;
+                    return downloadedDrawable.getBitmapDownloaderTask();
+                }
+            }
+            return null;
+        }
         private class Item
         {
             final int index;
@@ -159,9 +177,113 @@ public class TrendActivity extends Activity
                 this.imgUrl = imgUrl;
             }
         }
+        
+        private boolean cancelPotentialDownload(String url, ImageView imageView) {
+            BitmapDownloaderTask bitmapDownloaderTask = getBitmapDownloaderTask(imageView);
+
+            if (bitmapDownloaderTask != null) {
+                String bitmapUrl = bitmapDownloaderTask.url;
+                if ((bitmapUrl == null) || (!bitmapUrl.equals(url))) {
+                    bitmapDownloaderTask.cancel(true);
+                } else {
+                    // The same URL is already being downloaded.
+                    return false;
+                }
+            }
+            return true;
+        }
+    	
+    	// showing image
+    	private class  BitmapDownloaderTask extends AsyncTask<String, Void, Bitmap> {
+    		private String url;
+    	    private final WeakReference<ImageView> imageViewReference;
+
+    		@Override
+            protected Bitmap doInBackground(String... urls) {
+                Bitmap map = null;
+                for (String url : urls) {
+                    map = downloadImage(url);
+                }
+                return map;
+            }
+            public  BitmapDownloaderTask(ImageView imageView){
+            	imageViewReference = new WeakReference<ImageView>(imageView);
+            }
+            
+            // Sets the Bitmap returned by doInBackground
+            @Override
+            protected void onPostExecute(Bitmap bitmap) {
+            	if (imageViewReference != null) {
+            	    ImageView imageView = imageViewReference.get();
+            	    BitmapDownloaderTask bitmapDownloaderTask = getBitmapDownloaderTask(imageView);
+            	    // Change bitmap only if this process is still associated with it
+            	    if (this == bitmapDownloaderTask) {
+            	        imageView.setImageBitmap(bitmap);
+            	    }
+            	}
+            	
+            }
+     
+            // Creates Bitmap from InputStream and returns it
+            private Bitmap downloadImage(String url) {
+                Bitmap bitmap = null;
+                InputStream stream = null;
+                BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+                bmOptions.inSampleSize = 1;
+     
+                try {
+                    stream = getHttpConnection(url);
+                    bitmap = BitmapFactory.
+                            decodeStream(stream, null, bmOptions);
+                    stream.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                return bitmap;
+            }
+            
+
+     
+            // Makes HttpURLConnection and returns InputStream
+            private InputStream getHttpConnection(String urlString)
+                    throws IOException {
+                InputStream stream = null;
+                URL url = new URL(urlString);
+                URLConnection connection = url.openConnection();
+     
+                try {
+                    HttpURLConnection httpConnection = (HttpURLConnection) connection;
+                    httpConnection.setRequestMethod("GET");
+                    httpConnection.connect();
+     
+                    if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        stream = httpConnection.getInputStream();
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                return stream;
+            }
+        }
+    	
+        
+        class DownloadedDrawable extends ColorDrawable {
+            private final WeakReference<BitmapDownloaderTask> bitmapDownloaderTaskReference;
+
+            public DownloadedDrawable(BitmapDownloaderTask bitmapDownloaderTask) {
+                super(Color.BLACK);
+                bitmapDownloaderTaskReference =
+                    new WeakReference<BitmapDownloaderTask>(bitmapDownloaderTask);
+            }
+
+            public BitmapDownloaderTask getBitmapDownloaderTask() {
+                return bitmapDownloaderTaskReference.get();
+            }
+        }
+        
     }
     
-    
+
     private class HttpAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... urls) {
@@ -231,83 +353,6 @@ public class TrendActivity extends Activity
         return result;
  
     }
-	
-	// showing image
-	private class GetXMLTask extends AsyncTask<String, Void, Bitmap> {
-        private ImageView imv;
-        private String path;
-        @Override
-        protected Bitmap doInBackground(String... urls) {
-            Bitmap map = null;
-            for (String url : urls) {
-                map = downloadImage(url);
-            }
-            return map;
-        }
-        public GetXMLTask(ImageView imv){
-        	  this.imv = imv;
-              this.path = imv.getTag().toString();
-        }
-        // Sets the Bitmap returned by doInBackground
-        @Override
-        protected void onPostExecute(Bitmap result) {
-            if (!imv.getTag().toString().equals(path)) {
-                /* The path is not same. This means that this
-                   image view is handled by some other async task. 
-                   We don't do anything and return. */
-                return;
-         }     
-            
-            if(result != null && imv != null){
-                imv.setVisibility(View.VISIBLE);
-                imv.setImageBitmap(result);
-            }else{
-                imv.setVisibility(View.GONE);
-            }
-          
-        	
-        }
- 
-        // Creates Bitmap from InputStream and returns it
-        private Bitmap downloadImage(String url) {
-            Bitmap bitmap = null;
-            InputStream stream = null;
-            BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-            bmOptions.inSampleSize = 1;
- 
-            try {
-                stream = getHttpConnection(url);
-                bitmap = BitmapFactory.
-                        decodeStream(stream, null, bmOptions);
-                stream.close();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            return bitmap;
-        }
-        
 
- 
-        // Makes HttpURLConnection and returns InputStream
-        private InputStream getHttpConnection(String urlString)
-                throws IOException {
-            InputStream stream = null;
-            URL url = new URL(urlString);
-            URLConnection connection = url.openConnection();
- 
-            try {
-                HttpURLConnection httpConnection = (HttpURLConnection) connection;
-                httpConnection.setRequestMethod("GET");
-                httpConnection.connect();
- 
-                if (httpConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    stream = httpConnection.getInputStream();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-            return stream;
-        }
-    }
 	
 }
