@@ -21,6 +21,7 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -34,6 +35,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -71,7 +74,19 @@ public class TrendActivity extends Activity
 		   myadapter = new MyAdapter(this);
 		   GridView gridView = (GridView)findViewById(R.id.gridview);
            gridView.setAdapter(myadapter);
+           gridView.setOnItemClickListener(new OnItemClickListener() 
+           {
+               public void onItemClick(AdapterView<?> parent, View v, int position, long id) 
+               {
+            	   ImageView im;
+            	   im = (ImageView)v.getTag(R.id.grid_heart_image);
+            	   im.setImageResource(R.drawable.red_heart);
+                
+               }
+           });
 	}
+	
+	
 	//checking connection
 	public boolean isConnected(){
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
@@ -127,22 +142,28 @@ public class TrendActivity extends Activity
             View v = view;
             
             TextView name;
+            ImageView im;
+     	   
+
 
             if(v == null)
             {
                v = inflater.inflate(R.layout.gridview_item, viewGroup, false);
                v.setTag(R.id.picture, v.findViewById(R.id.picture));
                v.setTag(R.id.text, v.findViewById(R.id.text));
+               v.setTag(R.id.grid_heart_image, v.findViewById(R.id.grid_heart_image));
             }
             Item item = (Item)getItem(position);
             String url = items.get(position).imgUrl;
             picture = (ImageView)v.getTag(R.id.picture);
             name = (TextView)v.getTag(R.id.text);
-            if (cancelPotentialDownload(url, picture)) {
+            im = (ImageView)v.getTag(R.id.grid_heart_image);
+      	    if (cancelPotentialDownload(url, picture)) {
                 BitmapDownloaderTask task = new BitmapDownloaderTask(picture);
                 DownloadedDrawable downloadedDrawable = new DownloadedDrawable(task);
                 picture.setImageDrawable(downloadedDrawable);
-                name.setText(position+"s"+count);
+                name.setText("");
+                im.setImageResource(R.drawable.black_heart);
                 task.execute(url);
             }
 

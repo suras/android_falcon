@@ -7,6 +7,12 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
         />
+   <ImageView
+        android:id="@+id/grid_heart_image"
+        android:layout_width="wrap_content"  
+        android:layout_height="wrap_content" 
+        android:gravity="bottom"
+       />
     <TextView
         android:id="@+id/text"
         android:layout_width="match_parent"
@@ -17,6 +23,5 @@
         android:paddingBottom="15dp"
         android:layout_gravity="bottom"
         android:textColor="@android:color/white"
-        android:background="#55000000"
         />
 </FrameLayout>
